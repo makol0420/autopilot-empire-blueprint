@@ -15,6 +15,7 @@ export const useRoadmapProgress = () => {
   const [progress, setProgress] = useState<RoadmapProgress[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Load from Supabase (and sync to localStorage if needed)
   useEffect(() => {
     if (!user) {
       setProgress([]);
@@ -31,11 +32,18 @@ export const useRoadmapProgress = () => {
 
         if (error) throw error;
 
-        setProgress((data || []).map(item => ({
+        const formatted = (data || []).map(item => ({
           step_id: item.step_id,
           status: item.status,
           completed_at: item.completed_at
-        })));
+        }));
+
+        setProgress(formatted);
+
+        // Optional: sync to localStorage
+        localStorage.setItem("stepStatus", JSON.stringify(
+          Object.fromEntries(formatted.map(p => [p.step_id, p.status]))
+        ));
       } catch (error) {
         console.error('Error fetching roadmap progress:', error);
       } finally {
@@ -46,63 +54,82 @@ export const useRoadmapProgress = () => {
     fetchProgress();
   }, [user]);
 
-    const updateStepStatus = async (stepId: number, status: 'completed' | 'in-progress' | 'pending') => {
-      if (!user) return;
-    
-      try {
-        const { error } = await supabase
-          .from('roadmap_progress')
-          .upsert({
+  // Update single step
+  const updateStepStatus = async (
+    stepId: number,
+    status: 'completed' | 'in-progress' | 'pending'
+  ) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('roadmap_progress')
+        .upsert(
+          {
             user_id: user.id,
             step_id: stepId,
             status,
             completed_at: status === 'completed' ? new Date().toISOString() : null
-          }, {
-            onConflict: ['user_id', 'step_id'] // ✅ Prevents 409 Conflict error
-          });
-    
-        if (error) {
-          console.error('Error updating roadmap progress:', error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to update progress. Please try again.",
-          });
-          return;
-        }
-    
-        // Update local state
-        setProgress(prev => {
-          const existing = prev.find(p => p.step_id === stepId);
-          if (existing) {
-            return prev.map(p =>
-              p.step_id === stepId
-                ? { ...p, status, completed_at: status === 'completed' ? new Date().toISOString() : undefined }
-                : p
-            );
-          } else {
-            return [
-              ...prev,
-              {
-                step_id: stepId,
-                status,
-                completed_at: status === 'completed' ? new Date().toISOString() : undefined
-              }
-            ];
+          },
+          {
+            onConflict: ['user_id', 'step_id']
           }
-        });
-    
-        toast({
-          title: "Progress Updated",
-          description: `Step ${stepId} marked as ${status}`,
-        });
-    
-      } catch (error) {
-        console.error('Unexpected error:', error);
+        );
+
+      if (error) {
+        console.error('Error updating roadmap progress:', error);
         toast({
           variant: "destructive",
-          title: "Unexpected Error",
-          description: "Something went wrong. Please try again later.",
+          title: "Error",
+          description: "Failed to update progress. Please try again.",
         });
+        return;
       }
-    };
+
+      const newState = progress.some(p => p.step_id === stepId)
+        ? progress.map(p =>
+            p.step_id === stepId
+              ? { ...p, status, completed_at: status === 'completed' ? new Date().toISOString() : undefined }
+              : p
+          )
+        : [
+            ...progress,
+            {
+              step_id: stepId,
+              status,
+              completed_at: status === 'completed' ? new Date().toISOString() : undefined
+            }
+          ];
+
+      setProgress(newState);
+
+      // Optional: sync updated status to localStorage
+      localStorage.setItem("stepStatus", JSON.stringify(
+        Object.fromEntries(newState.map(p => [p.step_id, p.status]))
+      ));
+
+      toast({
+        title: "Progress Updated",
+        description: `Step ${stepId} marked as ${status}`,
+      });
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        variant: "destructive",
+        title: "Unexpected Error",
+        description: "Something went wrong. Please try again later.",
+      });
+    }
+  };
+
+  const getStepStatus = (stepId: number): RoadmapProgress["status"] => {
+    return progress.find(p => p.step_id === stepId)?.status || "pending";
+  };
+
+  return {
+    progress,
+    loading,
+    updateStepStatus,
+    getStepStatus,
+  };
+};
