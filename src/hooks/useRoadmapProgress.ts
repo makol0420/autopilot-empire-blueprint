@@ -48,9 +48,12 @@ export const useRoadmapProgress = () => {
     loadProgress();
   }, [user]);
 
-  const getStepStatus = (id: number): StepStatus => {
-    return stepStatus[id] || 'pending';
-  };
+  const getStepStatus = (stepId: number): 'completed' | 'in-progress' | 'pending' => {
+  const stepProgress = progress.find(p => p.step_id === stepId);
+  if (stepProgress) return stepProgress.status;
+  return 'pending'; // default fallback
+};
+
 
   const updateStepStatus = async (id: number, newStatus: StepStatus) => {
     const currentStatus = getStepStatus(id);
