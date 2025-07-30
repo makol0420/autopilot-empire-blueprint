@@ -14,7 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      automation_tasks: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      generated_content: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          tool_id: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          tool_id: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          tool_id?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          current_revenue: number | null
+          display_name: string | null
+          email: string | null
+          id: string
+          start_date: string | null
+          target_revenue: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_revenue?: number | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          start_date?: string | null
+          target_revenue?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_revenue?: number | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          start_date?: string | null
+          target_revenue?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      revenue_streams: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          source: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      roadmap_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          status: string
+          step_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          status: string
+          step_id: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          step_id?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
