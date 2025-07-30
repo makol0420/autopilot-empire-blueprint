@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
 import { Settings, ExternalLink, CheckCircle } from "lucide-react";
+import { useAutomationTasks } from "@/hooks/useAutomationTasks";
 
 interface AutomationTask {
   id: string;
@@ -80,16 +80,8 @@ const automationTasks: AutomationTask[] = [
 ];
 
 export function AutomationChecklist() {
-  const [tasks, setTasks] = useState(automationTasks);
-  
-  const toggleTask = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    ));
-  };
-
-  const completedTasks = tasks.filter(task => task.completed).length;
-  const completionPercentage = Math.round((completedTasks / tasks.length) * 100);
+  const { toggleTask, isTaskCompleted, completedCount } = useAutomationTasks();
+  const completionPercentage = Math.round((completedCount / automationTasks.length) * 100);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -109,7 +101,7 @@ export function AutomationChecklist() {
         </CardTitle>
         <div className="flex items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            {completedTasks} of {tasks.length} automations complete
+            {completedCount} of {automationTasks.length} automations complete
           </p>
           <Badge variant="success" className="text-xs">
             {completionPercentage}% Complete
@@ -117,11 +109,13 @@ export function AutomationChecklist() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {tasks.map((task) => (
+        {automationTasks.map((task) => {
+          const completed = isTaskCompleted(task.id);
+          return (
           <Card key={task.id} className="p-4">
             <div className="flex items-start gap-3">
               <Checkbox
-                checked={task.completed}
+                checked={completed}
                 onCheckedChange={() => toggleTask(task.id)}
                 className="mt-1"
               />
@@ -129,14 +123,14 @@ export function AutomationChecklist() {
               <div className="flex-1 space-y-2">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h4 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                    <h4 className={`font-medium ${completed ? 'line-through text-muted-foreground' : ''}`}>
                       {task.title}
                     </h4>
                     <p className="text-sm text-muted-foreground mt-1">
                       {task.description}
                     </p>
                   </div>
-                  {task.completed && (
+                  {completed && (
                     <CheckCircle className="h-5 w-5 text-success" />
                   )}
                 </div>
@@ -153,7 +147,7 @@ export function AutomationChecklist() {
                   </Badge>
                 </div>
                 
-                {task.url && !task.completed && (
+                {task.url && !completed && (
                   <Button size="sm" variant="outline" asChild>
                     <a href={task.url} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-3 w-3 mr-1" />
@@ -164,7 +158,8 @@ export function AutomationChecklist() {
               </div>
             </div>
           </Card>
-        ))}
+          );
+        })}
         
         {completionPercentage === 100 && (
           <Card className="p-4 bg-success/10 border-success/20">

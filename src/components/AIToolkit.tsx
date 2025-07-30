@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Bot, Sparkles, Copy, Download, RefreshCw } from "lucide-react";
+import { Bot, Sparkles, Copy, Download, RefreshCw, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useGeneratedContent } from "@/hooks/useGeneratedContent";
 
 interface AITool {
   id: string;
@@ -51,7 +52,9 @@ export function AIToolkit() {
   const [topic, setTopic] = useState("");
   const [generatedContent, setGeneratedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
+  const { contentHistory, saveGeneratedContent } = useGeneratedContent();
 
   const generateContent = async () => {
     if (!selectedTool || !topic) return;
@@ -59,10 +62,14 @@ export function AIToolkit() {
     setIsGenerating(true);
     
     // Simulate AI generation
-    setTimeout(() => {
+    setTimeout(async () => {
       const prompt = selectedTool.prompt.replace("[TOPIC]", topic).replace("[PRODUCT]", topic).replace("[NICHE]", topic);
-      setGeneratedContent(`Generated content for: ${prompt}\n\n[This would be AI-generated content based on your input]`);
+      const content = `Generated content for: ${prompt}\n\n[This would be AI-generated content based on your input. In a real implementation, this would connect to OpenAI, Claude, or another AI service to generate actual content.]`;
+      
+      setGeneratedContent(content);
+      await saveGeneratedContent(selectedTool.id, topic, content);
       setIsGenerating(false);
+      
       toast({
         title: "Content Generated!",
         description: "Your AI-powered content is ready to use.",
@@ -81,9 +88,19 @@ export function AIToolkit() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5" />
-          AI Content Toolkit
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            AI Content Toolkit
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowHistory(!showHistory)}
+          >
+            <History className="h-4 w-4 mr-2" />
+            History
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -144,6 +161,29 @@ export function AIToolkit() {
                   </>
                 )}
               </Button>
+            </div>
+          </div>
+        )}
+
+        {showHistory && contentHistory.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="font-semibold">Recent Content</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {contentHistory.map((item) => (
+                <Card key={item.id} className="p-3 cursor-pointer hover:bg-muted/50" onClick={() => setGeneratedContent(item.content)}>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-medium truncate">{item.topic}</p>
+                      <Badge variant="secondary" className="text-xs">
+                        {aiTools.find(t => t.id === item.tool_id)?.name || 'Unknown'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </Card>
+              ))}
             </div>
           </div>
         )}

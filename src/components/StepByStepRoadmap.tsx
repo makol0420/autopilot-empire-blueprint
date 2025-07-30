@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Circle, Clock, ArrowRight } from "lucide-react";
+import { useRoadmapProgress } from "@/hooks/useRoadmapProgress";
 
 interface Step {
   id: number;
@@ -62,6 +63,8 @@ const roadmapSteps: Step[] = [
 ];
 
 export function StepByStepRoadmap() {
+  const { getStepStatus, updateStepStatus } = useRoadmapProgress();
+  
   const getStatusIcon = (status: Step["status"]) => {
     switch (status) {
       case "completed":
@@ -93,11 +96,13 @@ export function StepByStepRoadmap() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {roadmapSteps.map((step) => (
+        {roadmapSteps.map((step) => {
+          const actualStatus = getStepStatus(step.id);
+          return (
           <Card key={step.id} className="p-4 hover:shadow-lg transition-shadow">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 mt-1">
-                {getStatusIcon(step.status)}
+                {getStatusIcon(actualStatus)}
               </div>
               
               <div className="flex-1 space-y-2">
@@ -108,8 +113,8 @@ export function StepByStepRoadmap() {
                       {step.description}
                     </p>
                   </div>
-                  <Badge variant={getStatusColor(step.status) as any}>
-                    {step.status.replace("-", " ")}
+                  <Badge variant={getStatusColor(actualStatus) as any}>
+                    {actualStatus.replace("-", " ")}
                   </Badge>
                 </div>
                 
@@ -128,21 +133,57 @@ export function StepByStepRoadmap() {
                   ))}
                 </div>
                 
-                {step.status === "in-progress" && (
-                  <Button variant="hero" size="sm" className="mt-2">
-                    Continue Step
+                {actualStatus === "completed" && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => updateStepStatus(step.id, 'in-progress')}
+                  >
+                    Mark In Progress
                   </Button>
                 )}
                 
-                {step.status === "pending" && (
+                {actualStatus === "in-progress" && (
+                  <div className="flex gap-2 mt-2">
+                    <Button 
+                      variant="hero" 
+                      size="sm"
+                      onClick={() => updateStepStatus(step.id, 'completed')}
+                    >
+                      Mark Complete
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => updateStepStatus(step.id, 'pending')}
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                )}
+                
+                {actualStatus === "pending" && step.id === 1 && (
+                  <Button 
+                    variant="hero" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => updateStepStatus(step.id, 'in-progress')}
+                  >
+                    Start Step
+                  </Button>
+                )}
+                
+                {actualStatus === "pending" && step.id > 1 && (
                   <Button variant="outline" size="sm" className="mt-2" disabled>
-                    Locked
+                    Complete Previous Steps
                   </Button>
                 )}
               </div>
             </div>
           </Card>
-        ))}
+        );
+        })}
       </CardContent>
     </Card>
   );

@@ -1,5 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
+import { useProfile } from "@/hooks/useProfile";
 
 interface DashboardHeaderProps {
   currentRevenue: number;
@@ -8,7 +9,10 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ currentRevenue, targetRevenue, daysRemaining }: DashboardHeaderProps) {
-  const progressPercentage = Math.min((currentRevenue / targetRevenue) * 100, 100);
+  const { profile } = useProfile();
+  const actualCurrentRevenue = profile?.current_revenue || currentRevenue;
+  const actualTargetRevenue = profile?.target_revenue || targetRevenue;
+  const progressPercentage = Math.min((actualCurrentRevenue / actualTargetRevenue) * 100, 100);
   
   return (
     <div className="space-y-6">
@@ -26,14 +30,14 @@ export function DashboardHeader({ currentRevenue, targetRevenue, daysRemaining }
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">Current Revenue</p>
             <p className="text-2xl font-bold text-success">
-              ${currentRevenue.toLocaleString()}
+              ${actualCurrentRevenue.toLocaleString()}
             </p>
           </div>
           
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">Target Revenue</p>
             <p className="text-2xl font-bold">
-              ${targetRevenue.toLocaleString()}
+              ${actualTargetRevenue.toLocaleString()}
             </p>
           </div>
           
