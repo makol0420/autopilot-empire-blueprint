@@ -1,9 +1,9 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Settings, ExternalLink, CheckCircle } from "lucide-react";
-import { useAutomationTasks } from "@/hooks/useAutomationTasks";
 
 interface AutomationTask {
   id: string;
@@ -13,7 +13,6 @@ interface AutomationTask {
   difficulty: "Easy" | "Medium" | "Hard";
   timeToSetup: string;
   url?: string;
-  completed: boolean;
 }
 
 const automationTasks: AutomationTask[] = [
@@ -24,8 +23,7 @@ const automationTasks: AutomationTask[] = [
     tool: "Zapier",
     difficulty: "Easy",
     timeToSetup: "15 mins",
-    url: "https://zapier.com/apps/twitter/integrations",
-    completed: false
+    url: "https://zapier.com/apps/twitter/integrations"
   },
   {
     id: "email-automation",
@@ -34,8 +32,7 @@ const automationTasks: AutomationTask[] = [
     tool: "ConvertKit",
     difficulty: "Medium",
     timeToSetup: "1 hour",
-    url: "https://convertkit.com/automations",
-    completed: false
+    url: "https://convertkit.com/automations"
   },
   {
     id: "lead-magnets",
@@ -44,8 +41,7 @@ const automationTasks: AutomationTask[] = [
     tool: "Typeform + Zapier",
     difficulty: "Easy",
     timeToSetup: "30 mins",
-    url: "https://typeform.com",
-    completed: false
+    url: "https://typeform.com"
   },
   {
     id: "social-scheduling",
@@ -54,8 +50,7 @@ const automationTasks: AutomationTask[] = [
     tool: "Buffer",
     difficulty: "Easy",
     timeToSetup: "20 mins",
-    url: "https://buffer.com",
-    completed: false
+    url: "https://buffer.com"
   },
   {
     id: "sales-tracking",
@@ -64,8 +59,7 @@ const automationTasks: AutomationTask[] = [
     tool: "Google Sheets + Zapier",
     difficulty: "Medium",
     timeToSetup: "45 mins",
-    url: "https://zapier.com/apps/google-sheets/integrations",
-    completed: false
+    url: "https://zapier.com/apps/google-sheets/integrations"
   },
   {
     id: "customer-onboarding",
@@ -74,13 +68,30 @@ const automationTasks: AutomationTask[] = [
     tool: "Gumroad + ConvertKit",
     difficulty: "Medium",
     timeToSetup: "1 hour",
-    url: "https://gumroad.com",
-    completed: false
+    url: "https://gumroad.com"
   }
 ];
 
 export function AutomationChecklist() {
-  const { toggleTask, isTaskCompleted, completedCount } = useAutomationTasks();
+  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const stored = localStorage.getItem("automationTasks");
+    if (stored) {
+      setCompletedTasks(JSON.parse(stored));
+    }
+  }, []);
+
+  const toggleTask = (id: string) => {
+    const updated = {
+      ...completedTasks,
+      [id]: !completedTasks[id]
+    };
+    setCompletedTasks(updated);
+    localStorage.setItem("automationTasks", JSON.stringify(updated));
+  };
+
+  const completedCount = Object.values(completedTasks).filter(Boolean).length;
   const completionPercentage = Math.round((completedCount / automationTasks.length) * 100);
 
   const getDifficultyColor = (difficulty: string) => {
@@ -110,54 +121,54 @@ export function AutomationChecklist() {
       </CardHeader>
       <CardContent className="space-y-4">
         {automationTasks.map((task) => {
-          const completed = isTaskCompleted(task.id);
+          const completed = completedTasks[task.id] || false;
           return (
-          <Card key={task.id} className="p-4">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                checked={completed}
-                onCheckedChange={() => toggleTask(task.id)}
-                className="mt-1"
-              />
-              
-              <div className="flex-1 space-y-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className={`font-medium ${completed ? 'line-through text-muted-foreground' : ''}`}>
-                      {task.title}
-                    </h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {task.description}
-                    </p>
+            <Card key={task.id} className="p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={completed}
+                  onCheckedChange={() => toggleTask(task.id)}
+                  className="mt-1"
+                />
+                
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className={`font-medium ${completed ? 'line-through text-muted-foreground' : ''}`}>
+                        {task.title}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {task.description}
+                      </p>
+                    </div>
+                    {completed && (
+                      <CheckCircle className="h-5 w-5 text-success" />
+                    )}
                   </div>
-                  {completed && (
-                    <CheckCircle className="h-5 w-5 text-success" />
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {task.tool}
+                    </Badge>
+                    <Badge variant={getDifficultyColor(task.difficulty) as any} className="text-xs">
+                      {task.difficulty}
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      {task.timeToSetup}
+                    </Badge>
+                  </div>
+                  
+                  {task.url && !completed && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={task.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Setup Now
+                      </a>
+                    </Button>
                   )}
                 </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {task.tool}
-                  </Badge>
-                  <Badge variant={getDifficultyColor(task.difficulty) as any} className="text-xs">
-                    {task.difficulty}
-                  </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    {task.timeToSetup}
-                  </Badge>
-                </div>
-                
-                {task.url && !completed && (
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={task.url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Setup Now
-                    </a>
-                  </Button>
-                )}
               </div>
-            </div>
-          </Card>
+            </Card>
           );
         })}
         
