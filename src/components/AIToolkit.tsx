@@ -1,12 +1,13 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bot, Sparkles, Copy, Download, RefreshCw, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useGeneratedContent } from "@/hooks/useGeneratedContent";
 
 interface AITool {
   id: string;
@@ -16,35 +17,47 @@ interface AITool {
   prompt: string;
 }
 
+interface ContentHistoryItem {
+  id: string;
+  topic: string;
+  tool_id: string;
+  content: string;
+  created_at: string;
+}
+
 const aiTools: AITool[] = [
   {
     id: "viral-twitter",
     name: "Viral Twitter Thread",
     description: "Generate engaging Twitter threads that drive engagement",
     category: "Content",
-    prompt: "Create a viral Twitter thread about [TOPIC] that provides value, includes hooks, and encourages sharing. Make it 5-7 tweets long."
+    prompt:
+      "Create a viral Twitter thread about [TOPIC] that provides value, includes hooks, and encourages sharing. Make it 5-7 tweets long.",
   },
   {
     id: "landing-page",
     name: "Landing Page Copy",
     description: "Write high-converting landing page copy",
     category: "Sales",
-    prompt: "Write compelling landing page copy for [PRODUCT] that addresses pain points, shows benefits, and includes a strong CTA."
+    prompt:
+      "Write compelling landing page copy for [PRODUCT] that addresses pain points, shows benefits, and includes a strong CTA.",
   },
   {
     id: "email-sequence",
     name: "Email Sequence",
     description: "Create nurturing email sequences",
     category: "Email",
-    prompt: "Create a 5-email welcome sequence for [NICHE] that builds trust, provides value, and leads to [PRODUCT] purchase."
+    prompt:
+      "Create a 5-email welcome sequence for [NICHE] that builds trust, provides value, and leads to [PRODUCT] purchase.",
   },
   {
     id: "product-idea",
     name: "Digital Product Ideas",
     description: "Generate profitable digital product concepts",
     category: "Products",
-    prompt: "Generate 10 digital product ideas for [NICHE] that solve real problems, can be created quickly, and priced between $10-100."
-  }
+    prompt:
+      "Generate 10 digital product ideas for [NICHE] that solve real problems, can be created quickly, and priced between $10-100.",
+  },
 ];
 
 export function AIToolkit() {
@@ -53,23 +66,45 @@ export function AIToolkit() {
   const [generatedContent, setGeneratedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [contentHistory, setContentHistory] = useState<ContentHistoryItem[]>([]);
+
   const { toast } = useToast();
-  const { contentHistory, saveGeneratedContent } = useGeneratedContent();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("aiContentHistory");
+    if (saved) setContentHistory(JSON.parse(saved));
+  }, []);
+
+  const saveGeneratedContent = (tool_id: string, topic: string, content: string) => {
+    const newEntry: ContentHistoryItem = {
+      id: Date.now().toString(),
+      topic,
+      tool_id,
+      content,
+      created_at: new Date().toISOString(),
+    };
+    const updatedHistory = [newEntry, ...contentHistory].slice(0, 50); // keep latest 50
+    setContentHistory(updatedHistory);
+    localStorage.setItem("aiContentHistory", JSON.stringify(updatedHistory));
+  };
 
   const generateContent = async () => {
     if (!selectedTool || !topic) return;
-    
+
     setIsGenerating(true);
-    
-    // Simulate AI generation
-    setTimeout(async () => {
-      const prompt = selectedTool.prompt.replace("[TOPIC]", topic).replace("[PRODUCT]", topic).replace("[NICHE]", topic);
-      const content = `Generated content for: ${prompt}\n\n[This would be AI-generated content based on your input. In a real implementation, this would connect to OpenAI, Claude, or another AI service to generate actual content.]`;
-      
+
+    setTimeout(() => {
+      const prompt = selectedTool.prompt
+        .replace("[TOPIC]", topic)
+        .replace("[PRODUCT]", topic)
+        .replace("[NICHE]", topic);
+
+      const content = `Generated content for: ${prompt}\n\n[Mock AI content here. Integrate real OpenAI/Claude for live results.]`;
+
       setGeneratedContent(content);
-      await saveGeneratedContent(selectedTool.id, topic, content);
+      saveGeneratedContent(selectedTool.id, topic, content);
       setIsGenerating(false);
-      
+
       toast({
         title: "Content Generated!",
         description: "Your AI-powered content is ready to use.",
@@ -83,6 +118,17 @@ export function AIToolkit() {
       title: "Copied!",
       description: "Content copied to clipboard.",
     });
+  };
+
+  const downloadContent = () => {
+    const blob = new Blob([generatedContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedTool?.id || "ai-content"}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -103,13 +149,15 @@ export function AIToolkit() {
           </Button>
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-6">
+        {/* Tool Selector */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {aiTools.map((tool) => (
-            <Card 
-              key={tool.id} 
+            <Card
+              key={tool.id}
               className={`p-3 cursor-pointer transition-all hover:shadow-md ${
-                selectedTool?.id === tool.id ? 'ring-2 ring-primary' : ''
+                selectedTool?.id === tool.id ? "ring-2 ring-primary" : ""
               }`}
               onClick={() => setSelectedTool(tool)}
             >
@@ -120,30 +168,33 @@ export function AIToolkit() {
                     {tool.category}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">{tool.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  {tool.description}
+                </p>
               </div>
             </Card>
           ))}
         </div>
 
+        {/* Generator */}
         {selectedTool && (
           <div className="space-y-4 p-4 bg-muted/20 rounded-lg">
             <h3 className="font-semibold flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
               {selectedTool.name}
             </h3>
-            
+
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium">Topic/Subject</label>
+                <label className="text-sm font-medium">Topic / Subject</label>
                 <Input
                   placeholder="Enter your topic, product, or niche..."
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                 />
               </div>
-              
-              <Button 
+
+              <Button
                 onClick={generateContent}
                 disabled={!topic || isGenerating}
                 variant="hero"
@@ -165,17 +216,22 @@ export function AIToolkit() {
           </div>
         )}
 
+        {/* History */}
         {showHistory && contentHistory.length > 0 && (
           <div className="space-y-3">
             <h3 className="font-semibold">Recent Content</h3>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {contentHistory.map((item) => (
-                <Card key={item.id} className="p-3 cursor-pointer hover:bg-muted/50" onClick={() => setGeneratedContent(item.content)}>
+                <Card
+                  key={item.id}
+                  className="p-3 cursor-pointer hover:bg-muted/50"
+                  onClick={() => setGeneratedContent(item.content)}
+                >
                   <div className="space-y-1">
                     <div className="flex justify-between items-start">
                       <p className="text-sm font-medium truncate">{item.topic}</p>
                       <Badge variant="secondary" className="text-xs">
-                        {aiTools.find(t => t.id === item.tool_id)?.name || 'Unknown'}
+                        {aiTools.find((t) => t.id === item.tool_id)?.name || "Unknown"}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -188,6 +244,7 @@ export function AIToolkit() {
           </div>
         )}
 
+        {/* Output Display */}
         {generatedContent && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -197,7 +254,7 @@ export function AIToolkit() {
                   <Copy className="h-3 w-3 mr-1" />
                   Copy
                 </Button>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={downloadContent}>
                   <Download className="h-3 w-3 mr-1" />
                   Export
                 </Button>
