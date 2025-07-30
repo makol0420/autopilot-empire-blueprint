@@ -49,75 +49,83 @@ export const useRoadmapProgress = () => {
     fetchProgress();
   }, [user]);
 
- const updateStepStatus = async (stepId: number, status: 'completed' | 'in-progress' | 'pending') => {
-  if (!user) return;
+  const getStepStatus = (stepId: number): 'completed' | 'in-progress' | 'pending' => {
+    const stepProgress = progress.find(p => p.step_id === stepId);
+    return stepProgress?.status || 'pending';
+  };
 
-  // 🚫 Block starting a step unless the previous one is completed
-  if (status === 'in-progress' && stepId > 1) {
-    const prevStepStatus = getStepStatus(stepId - 1);
-    if (prevStepStatus !== 'completed') {
-      toast({
-        variant: "destructive",
-        title: "Complete Previous Step First",
-        description: `You must complete step ${stepId - 1} before starting step ${stepId}.`,
-      });
-      return;
-    }
-  }
+  const updateStepStatus = async (
+    stepId: number,
+    status: 'completed' | 'in-progress' | 'pending'
+  ) => {
+    if (!user) return;
 
-  try {
-    const { error } = await supabase
-      .from('roadmap_progress')
-      .upsert({
-        user_id: user.id,
-        step_id: stepId,
-        status,
-        completed_at: status === 'completed' ? new Date().toISOString() : null
-      });
+    const currentStatus = getStepStatus(stepId);
 
-    if (error) {
-      console.error('Error updating roadmap progress:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update progress. Please try again.",
-      });
-      return;
-    }
-
-    setProgress(prev => {
-      const existing = prev.find(p => p.step_id === stepId);
-      if (existing) {
-        return prev.map(p =>
-          p.step_id === stepId
-            ? { ...p, status, completed_at: status === 'completed' ? new Date().toISOString() : undefined }
-            : p
-        );
-      } else {
-        return [...prev, { step_id: stepId, status, completed_at: status === 'completed' ? new Date().toISOString() : undefined }];
+    // ❌ Prevent starting a step unless previous is completed
+    if (status === 'in-progress' && stepId > 1) {
+      const prevStepStatus = getStepStatus(stepId - 1);
+      if (prevStepStatus !== 'completed') {
+        toast({
+          variant: 'destructive',
+          title: 'Hold up!',
+          description: `You must complete Step ${stepId - 1} before starting Step ${stepId}.`,
+        });
+        return;
       }
-    });
+    }
 
-    toast({
-      title: "Progress Updated",
-      description: `Step ${stepId} marked as ${status}`,
-    });
-  } catch (error) {
-    console.error('Error updating roadmap progress:', error);
-  }
-};
+    // ❌ Prevent marking step completed if it wasn’t started
+    if (status === 'completed' && currentStatus !== 'in-progress') {
+      toast({
+        variant: 'destructive',
+        title: 'Start Step First',
+        description: `You must start Step ${stepId} before marking it complete.`,
+      });
+      return;
+    }
 
+    try {
+      const { error } = await supabase
+        .from('roadmap_progress')
+        .upsert({
+          user_id: user.id,
+          step_id: stepId,
+          status,
+          completed_at: status === 'completed' ? new Date().toISOString() : null
+        });
+
+      if (error) {
+        console.error('Error updating roadmap progress:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to update progress. Please try again.",
+        });
+        return;
+      }
 
       setProgress(prev => {
         const existing = prev.find(p => p.step_id === stepId);
         if (existing) {
-          return prev.map(p => 
-            p.step_id === stepId 
-              ? { ...p, status, completed_at: status === 'completed' ? new Date().toISOString() : undefined }
+          return prev.map(p =>
+            p.step_id === stepId
+              ? {
+                  ...p,
+                  status,
+                  completed_at: status === 'completed' ? new Date().toISOString() : undefined
+                }
               : p
           );
         } else {
-          return [...prev, { step_id: stepId, status, completed_at: status === 'completed' ? new Date().toISOString() : undefined }];
+          return [
+            ...prev,
+            {
+              step_id: stepId,
+              status,
+              completed_at: status === 'completed' ? new Date().toISOString() : undefined
+            }
+          ];
         }
       });
 
@@ -128,11 +136,6 @@ export const useRoadmapProgress = () => {
     } catch (error) {
       console.error('Error updating roadmap progress:', error);
     }
-  };
-
-  const getStepStatus = (stepId: number): 'completed' | 'in-progress' | 'pending' => {
-    const stepProgress = progress.find(p => p.step_id === stepId);
-    return stepProgress?.status || 'pending';
   };
 
   return {
