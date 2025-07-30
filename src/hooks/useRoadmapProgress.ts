@@ -46,7 +46,7 @@ export const useRoadmapProgress = () => {
     fetchProgress();
   }, [user]);
 
-  cconst updateStepStatus = async (stepId: number, status: 'completed' | 'in-progress' | 'pending') => {
+  const updateStepStatus = async (stepId: number, status: 'completed' | 'in-progress' | 'pending') => {
   if (!user) return;
 
   try {
