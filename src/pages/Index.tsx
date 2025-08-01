@@ -4,6 +4,7 @@ import { MonetizationFlow } from "@/components/MonetizationFlow";
 import { AIToolkit } from "@/components/AIToolkit";
 import { AutomationChecklist } from "@/components/AutomationChecklist";
 import { AuthGate } from "@/components/AuthGate";
+import VideoUploader from "@/pages/VideoUploader";
 
 const Index = () => {
   // Calculate days remaining (90 days from now)
@@ -32,6 +33,8 @@ const Index = () => {
               <AutomationChecklist />
             </div>
           </div>
+          
+          <VideoUploader />
         </div>
       </div>
     </AuthGate>

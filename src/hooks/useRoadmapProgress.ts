@@ -34,7 +34,7 @@ export const useRoadmapProgress = () => {
 
         const formatted = (data || []).map(item => ({
           step_id: item.step_id,
-          status: item.status,
+          status: item.status as 'completed' | 'in-progress' | 'pending',
           completed_at: item.completed_at
         }));
 
@@ -72,7 +72,7 @@ export const useRoadmapProgress = () => {
             completed_at: status === 'completed' ? new Date().toISOString() : null
           },
           {
-            onConflict: ['user_id', 'step_id']
+            onConflict: 'user_id,step_id'
           }
         );
 
