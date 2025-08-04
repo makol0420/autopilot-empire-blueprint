@@ -10,6 +10,9 @@ import Dashboard from "./pages/Dashboard";
 import Tools from "./pages/Tools";
 import Content from "./pages/Content";
 import Roadmap from "./pages/Roadmap";
+import Automation from "./pages/Automation";
+import Revenue from "./pages/Revenue";
+import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -42,6 +45,21 @@ const App = () => (
             <Route path="/content" element={
               <Layout>
                 <Content />
+              </Layout>
+            } />
+            <Route path="/automation" element={
+              <Layout>
+                <Automation />
+              </Layout>
+            } />
+            <Route path="/revenue" element={
+              <Layout>
+                <Revenue />
+              </Layout>
+            } />
+            <Route path="/profile" element={
+              <Layout>
+                <Profile />
               </Layout>
             } />
             <Route path="*" element={<NotFound />} />
