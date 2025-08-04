@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Circle, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle, Circle, Clock, ArrowRight, Check } from 'lucide-react';
 import { useRoadmapProgress } from '@/hooks/useRoadmapProgress';
+import { useRoadmapTaskProgress } from '@/hooks/useRoadmapTaskProgress';
 
 interface Step {
   id: number;
@@ -24,6 +25,7 @@ const roadmapSteps: Step[] = [
 
 export function StepByStepRoadmap() {
   const { getStepStatus, updateStepStatus } = useRoadmapProgress();
+  const { toggleTaskCompletion, isTaskCompleted } = useRoadmapTaskProgress();
 
   const getStatusIcon = (status: Step['status']) => {
     switch (status) {
@@ -73,10 +75,31 @@ export function StepByStepRoadmap() {
                     <Badge variant="outline" className="text-success">{step.revenue}</Badge>
                   </div>
 
-                  <div className="flex flex-wrap gap-1">
-                    {step.tools.map(tool => (
-                      <Badge key={tool} variant="secondary" className="text-xs">{tool}</Badge>
-                    ))}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground">Tools & Platforms:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {step.tools.map(tool => {
+                        const isCompleted = isTaskCompleted(step.id, tool);
+                        return (
+                          <div
+                            key={tool}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs cursor-pointer transition-colors ${
+                              isCompleted 
+                                ? 'bg-success/20 text-success-foreground border border-success/30' 
+                                : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'
+                            }`}
+                            onClick={() => toggleTaskCompletion(step.id, tool)}
+                          >
+                            <div className={`w-3 h-3 rounded-sm border flex items-center justify-center ${
+                              isCompleted ? 'bg-success border-success' : 'border-muted-foreground'
+                            }`}>
+                              {isCompleted && <Check className="w-2 h-2 text-white" />}
+                            </div>
+                            <span>{tool}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {actualStatus === 'completed' && (
