@@ -1,4 +1,5 @@
 import { AutomationChecklist } from "@/components/AutomationChecklist";
+import { AIAgentWorkflow } from "@/components/AIAgentWorkflow";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { AuthGate } from "@/components/AuthGate";
 
@@ -14,6 +15,7 @@ const Automation = () => {
             </p>
           </div>
           
+          <AIAgentWorkflow />
           <AutomationChecklist />
         </div>
       </div>
