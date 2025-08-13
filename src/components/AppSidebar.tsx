@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { 
   LayoutDashboard, 
   Target, 
@@ -9,6 +8,7 @@ import {
   User
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 import {
   Sidebar,
@@ -37,10 +37,11 @@ const businessItems = [
 ]
 
 export function AppSidebar() {
-  const { state } = useSidebar()
+  const { state, open, setOpen } = useSidebar()
   const collapsed = state === "collapsed"
   const location = useLocation()
   const currentPath = location.pathname
+  const isMobile = useIsMobile()
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/"
@@ -52,32 +53,37 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={collapsed ? "w-16" : "w-64"}
+      className={`${collapsed ? "w-16" : "w-64"} ${isMobile && !open ? "hidden" : ""}`}
       collapsible="icon"
+      variant={isMobile ? "floating" : "sidebar"}
     >
-      <SidebarContent className="bg-background">
-        <div className="p-4 border-b">
-          <h2 className={`font-bold text-lg ${collapsed ? "text-center" : ""}`}>
+      <SidebarContent className="bg-background border-r">
+        <div className="p-3 sm:p-4 border-b">
+          <h2 className={`font-bold text-base sm:text-lg ${collapsed ? "text-center" : ""}`}>
             {collapsed ? "💰" : "💰 Revenue Builder"}
           </h2>
         </div>
 
-        <SidebarGroup className="px-2 py-4">
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+        <SidebarGroup className="px-2 py-3 sm:py-4">
+          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-xs uppercase tracking-wider font-medium text-muted-foreground px-3 pb-2"}>
             Main Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton 
+                    asChild 
+                    onClick={() => isMobile && setOpen(false)}
+                    className="w-full"
+                  >
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
-                      className={({ isActive }) => `${getNavCls({ isActive })} flex items-center gap-3 px-3 py-2 rounded-md transition-colors`}
+                      className={({ isActive }) => `${getNavCls({ isActive })} flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm w-full`}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -86,21 +92,25 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="px-2 py-4">
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+        <SidebarGroup className="px-2 py-3 sm:py-4">
+          <SidebarGroupLabel className={collapsed ? "sr-only" : "text-xs uppercase tracking-wider font-medium text-muted-foreground px-3 pb-2"}>
             Business
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {businessItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton 
+                    asChild 
+                    onClick={() => isMobile && setOpen(false)}
+                    className="w-full"
+                  >
                     <NavLink 
                       to={item.url}
-                      className={({ isActive }) => `${getNavCls({ isActive })} flex items-center gap-3 px-3 py-2 rounded-md transition-colors`}
+                      className={({ isActive }) => `${getNavCls({ isActive })} flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm w-full`}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && <span className="truncate">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
