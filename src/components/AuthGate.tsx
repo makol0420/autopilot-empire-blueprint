@@ -87,15 +87,5 @@ export const AuthGate = ({ children }: AuthGateProps) => {
     );
   }
 
-  return (
-    <div className="relative">
-      <div className="absolute top-4 right-4 z-50">
-        <Button variant="outline" size="sm" onClick={signOut}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
-      </div>
-      {children}
-    </div>
-  );
+  return children;
 };
