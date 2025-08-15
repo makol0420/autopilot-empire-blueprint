@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { 
   Bot, 
   Play, 
@@ -24,7 +25,11 @@ import {
   Download,
   History,
   Workflow,
-  Zap
+  Zap,
+  ExternalLink,
+  Calendar,
+  Clock,
+  TrendingUp
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,22 +43,27 @@ interface WorkflowStep {
   progress?: number;
 }
 
+interface GeneratedVideo {
+  id: string;
+  title: string;
+  topic: string;
+  style: string;
+  duration: string;
+  platforms: string[];
+  status: 'generating' | 'ready' | 'posted' | 'error';
+  thumbnailUrl?: string;
+  videoUrl?: string;
+  createdAt: string;
+  postsCompleted: number;
+  totalPosts: number;
+}
+
 interface AITool {
   id: string;
   name: string;
   description: string;
   category: string;
   prompt: string;
-}
-
-interface AutomationTask {
-  id: string;
-  title: string;
-  description: string;
-  tool: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  timeToSetup: string;
-  url?: string;
 }
 
 const workflowSteps: WorkflowStep[] = [
@@ -118,38 +128,42 @@ const aiTools: AITool[] = [
   }
 ];
 
-const automationTasks: AutomationTask[] = [
+const mockGeneratedVideos: GeneratedVideo[] = [
   {
-    id: 'social-accounts',
-    title: 'Connect Social Media Accounts',
-    description: 'Link your TikTok, Instagram, and YouTube accounts for automated posting',
-    tool: 'Social Media APIs',
-    difficulty: 'Beginner',
-    timeToSetup: '10 min'
+    id: '1',
+    title: 'Productivity Tips for Entrepreneurs',
+    topic: 'productivity tips for entrepreneurs',
+    style: 'educational',
+    duration: '30',
+    platforms: ['TikTok', 'Instagram Reels', 'YouTube Shorts'],
+    status: 'posted',
+    createdAt: '2024-01-15T10:30:00Z',
+    postsCompleted: 3,
+    totalPosts: 3
   },
   {
-    id: 'ai-prompts',
-    title: 'Optimize AI Prompts',
-    description: 'Fine-tune AI prompts for your niche and brand voice',
-    tool: 'OpenAI API',
-    difficulty: 'Intermediate', 
-    timeToSetup: '15 min'
+    id: '2', 
+    title: 'Morning Routine Secrets',
+    topic: 'morning routine secrets',
+    style: 'motivational',
+    duration: '60',
+    platforms: ['TikTok', 'Instagram Reels'],
+    status: 'ready',
+    createdAt: '2024-01-14T15:20:00Z',
+    postsCompleted: 0,
+    totalPosts: 2
   },
   {
-    id: 'voice-clone',
-    title: 'Voice Cloning Setup',
-    description: 'Create a custom voice model for consistent audio content',
-    tool: 'ElevenLabs',
-    difficulty: 'Advanced',
-    timeToSetup: '30 min'
-  },
-  {
-    id: 'content-calendar',
-    title: 'Automated Scheduling',
-    description: 'Set up automated content posting schedules',
-    tool: 'Buffer/Hootsuite',
-    difficulty: 'Beginner',
-    timeToSetup: '20 min'
+    id: '3',
+    title: 'Social Media Growth Hacks',
+    topic: 'social media growth hacks',
+    style: 'viral',
+    duration: '45',
+    platforms: ['TikTok', 'Instagram Reels', 'YouTube Shorts', 'Twitter'],
+    status: 'generating',
+    createdAt: '2024-01-16T09:15:00Z',
+    postsCompleted: 0,
+    totalPosts: 4
   }
 ];
 
@@ -157,6 +171,7 @@ export function UnifiedContentHub() {
   const [activeTab, setActiveTab] = useState("workflow");
   const [steps, setSteps] = useState<WorkflowStep[]>(workflowSteps);
   const [isRunning, setIsRunning] = useState(false);
+  const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>(mockGeneratedVideos);
   
   // Workflow settings
   const [topic, setTopic] = useState("");
@@ -169,9 +184,6 @@ export function UnifiedContentHub() {
   const [selectedTool, setSelectedTool] = useState<AITool | null>(null);
   const [generatedContent, setGeneratedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  
-  // Automation
-  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   
   const { toast } = useToast();
 
@@ -216,9 +228,25 @@ export function UnifiedContentHub() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       updateStepStatus('post-social', 'completed');
 
+      // Create a new video entry
+      const newVideo: GeneratedVideo = {
+        id: Date.now().toString(),
+        title: `${style} content about ${topic}`,
+        topic,
+        style,
+        duration,
+        platforms: [...platforms],
+        status: 'ready',
+        createdAt: new Date().toISOString(),
+        postsCompleted: platforms.length,
+        totalPosts: platforms.length
+      };
+
+      setGeneratedVideos(prev => [newVideo, ...prev]);
+
       toast({
         title: "Workflow Complete!",
-        description: `Successfully posted to ${platforms.length} platforms.`,
+        description: `Successfully created content for ${platforms.length} platforms.`,
       });
 
     } catch (error) {
@@ -251,12 +279,20 @@ export function UnifiedContentHub() {
     }, 2000);
   };
 
-  const toggleTask = (taskId: string) => {
-    setCompletedTasks(prev => 
-      prev.includes(taskId) 
-        ? prev.filter(id => id !== taskId)
-        : [...prev, taskId]
-    );
+  const postToSocialMedia = async (videoId: string) => {
+    const video = generatedVideos.find(v => v.id === videoId);
+    if (!video) return;
+
+    setGeneratedVideos(prev => prev.map(v => 
+      v.id === videoId 
+        ? { ...v, status: 'posted' as const, postsCompleted: v.totalPosts }
+        : v
+    ));
+
+    toast({
+      title: "Posted Successfully!",
+      description: `Content posted to ${video.platforms.length} platforms.`,
+    });
   };
 
   const getStatusIcon = (status: WorkflowStep['status']) => {
@@ -268,9 +304,24 @@ export function UnifiedContentHub() {
     }
   };
 
-  const completedCount = completedTasks.length;
-  const totalTasks = automationTasks.length;
-  const completionPercentage = (completedCount / totalTasks) * 100;
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status: GeneratedVideo['status']) => {
+    switch (status) {
+      case 'generating': return 'bg-blue-500';
+      case 'ready': return 'bg-yellow-500'; 
+      case 'posted': return 'bg-green-500';
+      case 'error': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -281,7 +332,7 @@ export function UnifiedContentHub() {
             Unified Content & Automation Hub
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Complete content creation and automation workflow - from idea to viral social media posts
+            AI workflow automation and content library - create, track, and distribute viral content
           </p>
         </CardHeader>
         <CardContent>
@@ -289,15 +340,15 @@ export function UnifiedContentHub() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="workflow" className="flex items-center gap-2">
                 <Workflow className="h-4 w-4" />
-                AI Workflow
+                Create Content
               </TabsTrigger>
               <TabsTrigger value="content" className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
-                Content Tools
+                AI Tools
               </TabsTrigger>
-              <TabsTrigger value="automation" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Automation Setup
+              <TabsTrigger value="library" className="flex items-center gap-2">
+                <Video className="h-4 w-4" />
+                Content Library
               </TabsTrigger>
             </TabsList>
 
@@ -520,83 +571,150 @@ export function UnifiedContentHub() {
               )}
             </TabsContent>
 
-            <TabsContent value="automation" className="space-y-6">
-              {/* Progress Overview */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Setup Progress</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Complete these tasks to unlock full automation capabilities
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Completed Tasks</span>
-                      <span>{completedCount}/{totalTasks}</span>
-                    </div>
-                    <div className="w-full bg-secondary rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${completionPercentage}%` }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="library" className="space-y-6">
+              {/* Generated Videos Library */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-medium text-lg">Generated Content Library</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {generatedVideos.length} videos created
+                  </Badge>
+                </div>
 
-              {/* Automation Tasks */}
-              <div className="space-y-3">
-                {automationTasks.map((task) => (
-                  <Card key={task.id} className={`transition-all ${completedTasks.includes(task.id) ? 'bg-muted/50' : ''}`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="pt-1">
-                          <input
-                            type="checkbox"
-                            checked={completedTasks.includes(task.id)}
-                            onChange={() => toggleTask(task.id)}
-                            className="rounded border-2 w-4 h-4"
-                          />
-                        </div>
-                        
-                        <div className="flex-1 space-y-2">
-                          <div className="flex justify-between items-start">
-                            <h3 className={`font-medium ${completedTasks.includes(task.id) ? 'line-through text-muted-foreground' : ''}`}>
-                              {task.title}
-                            </h3>
-                            <div className="flex gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                {task.difficulty}
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                {task.timeToSetup}
-                              </Badge>
-                            </div>
+                <div className="grid gap-4">
+                  {generatedVideos.map((video) => (
+                    <Card key={video.id} className="relative overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          {/* Video Thumbnail Placeholder */}
+                          <div className="w-20 h-20 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Video className="h-8 w-8 text-muted-foreground" />
                           </div>
                           
-                          <p className="text-sm text-muted-foreground">{task.description}</p>
-                          <p className="text-xs text-muted-foreground">Tool: {task.tool}</p>
+                          {/* Video Details */}
+                          <div className="flex-1 space-y-2">
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-sm line-clamp-2">{video.title}</h4>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${getStatusColor(video.status)}`}></div>
+                                <Badge variant="outline" className="text-xs">
+                                  {video.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-1">
+                              {video.platforms.map((platform) => (
+                                <Badge key={platform} variant="secondary" className="text-xs">
+                                  {platform}
+                                </Badge>
+                              ))}
+                            </div>
+                            
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {video.duration}s
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(video.createdAt)}
+                              </div>
+                            </div>
+
+                            {/* Progress for posting */}
+                            {video.status === 'ready' && (
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-xs">
+                                  <span>Ready to post</span>
+                                  <span>{video.postsCompleted}/{video.totalPosts} platforms</span>
+                                </div>
+                                <Progress value={(video.postsCompleted / video.totalPosts) * 100} className="h-2" />
+                              </div>
+                            )}
+
+                            {video.status === 'posted' && (
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-xs text-green-600">
+                                  <span className="flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3" />
+                                    Posted successfully
+                                  </span>
+                                  <span>{video.postsCompleted}/{video.totalPosts} platforms</span>
+                                </div>
+                                <Progress value={100} className="h-2" />
+                              </div>
+                            )}
+
+                            {video.status === 'generating' && (
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-xs text-blue-600">
+                                  <span className="flex items-center gap-1">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Generating content...
+                                  </span>
+                                  <span>0/{video.totalPosts} platforms</span>
+                                </div>
+                                <Progress value={25} className="h-2" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-col gap-2">
+                            {video.status === 'ready' && (
+                              <Button
+                                size="sm"
+                                onClick={() => postToSocialMedia(video.id)}
+                                className="text-xs"
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                Post Now
+                              </Button>
+                            )}
+                            
+                            {video.status === 'posted' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                View Posts
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Download
+                            </Button>
+                          </div>
                         </div>
-                      </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {generatedVideos.length === 0 && (
+                  <Card className="border-dashed">
+                    <CardContent className="p-8 text-center">
+                      <Video className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="font-medium mb-2">No content generated yet</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Use the AI workflow to create your first viral content
+                      </p>
+                      <Button onClick={() => setActiveTab("workflow")} size="sm">
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Start Creating
+                      </Button>
                     </CardContent>
                   </Card>
-                ))}
+                )}
               </div>
-
-              {completedCount === totalTasks && (
-                <Card className="border-green-200 bg-green-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 text-green-700">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="font-medium">Automation Setup Complete!</span>
-                    </div>
-                    <p className="text-sm text-green-600 mt-1">
-                      Your automation hub is fully configured and ready to create viral content automatically.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
             </TabsContent>
           </Tabs>
         </CardContent>

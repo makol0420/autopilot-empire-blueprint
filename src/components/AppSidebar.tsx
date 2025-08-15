@@ -28,7 +28,6 @@ const mainItems = [
   { title: "90-Day Roadmap", url: "/roadmap", icon: Target },
   { title: "AI Tools", url: "/tools", icon: Wrench },
   { title: "Content Hub", url: "/content", icon: Upload },
-  { title: "Automation", url: "/automation", icon: CheckSquare },
 ]
 
 const businessItems = [
