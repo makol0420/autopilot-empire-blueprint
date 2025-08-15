@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
 
 interface WorkflowStep {
   id: string;
@@ -63,10 +64,71 @@ const initialSteps: WorkflowStep[] = [
   }
 ];
 
+const NICHES = [
+  'AI',
+  'Productivity',
+  'Entrepreneurship',
+  'Marketing',
+  'Personal Finance',
+  'Tech',
+  'Fitness',
+  'Self-Improvement',
+];
+
+const FALLBACK_TOPICS: Record<string, string[]> = {
+  AI: [
+    '5 AI tools to automate your content workflow',
+    'How to use AI to script videos faster',
+    'Beginner-friendly AI content creation tips',
+    'Best AI prompts for viral hooks',
+  ],
+  Productivity: [
+    '3 time-blocking tips for busy creators',
+    'Morning routine that actually boosts output',
+    'How to focus for 2 hours without burnout',
+  ],
+  Entrepreneurship: [
+    'Low-cost business ideas for creators',
+    'Validate your idea in 48 hours',
+    'Avoid these 3 mistakes launching products',
+  ],
+  Marketing: [
+    'Steal these 3 hooks for your next video',
+    'How to repurpose one video into 10 posts',
+    'CTA frameworks that convert viewers to buyers',
+  ],
+  'Personal Finance': [
+    '3 money habits for creators',
+    'How to budget inconsistent income',
+    'Beginner investing for freelancers',
+  ],
+  Tech: [
+    'Top 3 creator gadgets under $100',
+    'How to edit faster with keyboard shortcuts',
+    'Budget lighting setup for reels',
+  ],
+  Fitness: [
+    '5 quick desk stretches for creators',
+    'Healthy snacks when editing all day',
+    'Beginner home workout in 10 minutes',
+  ],
+  'Self-Improvement': [
+    'Beat perfectionism and publish more',
+    'How to build a daily creator habit',
+    'Mindset shifts to show up on camera',
+  ],
+  General: [
+    '3 video ideas you can record today',
+    'How to go from 0 to 1k followers',
+  ],
+};
+
 export function AIAgentWorkflow() {
   const [steps, setSteps] = useState<WorkflowStep[]>(initialSteps);
   const [isRunning, setIsRunning] = useState(false);
   const [topic, setTopic] = useState("");
+  const [autoTopic, setAutoTopic] = useState(true);
+  const [niche, setNiche] = useState<string>('AI');
   const [style, setStyle] = useState("");
   const [voice, setVoice] = useState("alloy");
   const [duration, setDuration] = useState("30");
@@ -79,6 +141,29 @@ export function AIAgentWorkflow() {
         ? { ...step, status, progress }
         : step
     ));
+  };
+
+  const autoPickTopic = async (): Promise<string> => {
+    // Try Edge Function first (if implemented), then fallback
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-content-generator', {
+        body: {
+          type: 'topic-ideas',
+          niche,
+          style,
+          count: 5,
+        }
+      });
+      if (error) throw error;
+      const ideas: unknown = data?.topics ?? data?.ideas ?? [];
+      if (Array.isArray(ideas) && ideas.length > 0 && typeof ideas[0] === 'string') {
+        return ideas[0] as string;
+      }
+    } catch {
+      // ignore and fallback
+    }
+    const pool = FALLBACK_TOPICS[niche] ?? FALLBACK_TOPICS['General'];
+    return pool[Math.floor(Math.random() * pool.length)];
   };
 
   const generateContentPrompt = async (topic: string, style: string, duration: string) => {
@@ -155,10 +240,10 @@ export function AIAgentWorkflow() {
   };
 
   const runWorkflow = async () => {
-    if (!topic || !style || platforms.length === 0) {
+    if (platforms.length === 0) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields and select at least one platform.",
+        description: "Please select at least one platform.",
         variant: "destructive"
       });
       return;
@@ -167,9 +252,17 @@ export function AIAgentWorkflow() {
     setIsRunning(true);
     
     try {
+      // Auto-pick topic if enabled or missing
+      let workingTopic = topic;
+      if (autoTopic || !workingTopic) {
+        workingTopic = await autoPickTopic();
+        setTopic(workingTopic);
+        toast({ title: 'Topic selected', description: workingTopic });
+      }
+
       // Step 1: Generate Content Prompt
       updateStepStatus('generate-prompt', 'running');
-      const script = await generateContentPrompt(topic, style, duration);
+      const script = await generateContentPrompt(workingTopic, style, duration);
       updateStepStatus('generate-prompt', 'completed');
 
       // Step 2: Text to Audio
@@ -179,7 +272,7 @@ export function AIAgentWorkflow() {
 
       // Step 3: Audio to Video
       updateStepStatus('audio-to-video', 'running');
-      const videoUrl = await audioToVideo(audioUrl, topic, duration);
+      const videoUrl = await audioToVideo(audioUrl, workingTopic, duration);
       updateStepStatus('audio-to-video', 'completed');
 
       // Step 4: Post to Social Media
@@ -252,14 +345,34 @@ export function AIAgentWorkflow() {
           {/* Configuration */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="topic">Content Topic</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="topic">Content Topic</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="auto-topic" className="text-xs text-muted-foreground">Auto-pick</Label>
+                  <Switch id="auto-topic" checked={autoTopic} onCheckedChange={setAutoTopic} disabled={isRunning} />
+                </div>
+              </div>
               <Input
                 id="topic"
-                placeholder="e.g., 'productivity tips for entrepreneurs'"
+                placeholder={autoTopic ? "Auto-selected based on niche" : "e.g., 'productivity tips for entrepreneurs'"}
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                disabled={isRunning}
+                disabled={isRunning || autoTopic}
               />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="niche">Niche</Label>
+              <Select value={niche} onValueChange={setNiche} disabled={isRunning}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select niche" />
+                </SelectTrigger>
+                <SelectContent>
+                  {NICHES.map(n => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
