@@ -1,0 +1,27 @@
+{
+  "services": [
+    {
+      "name": "saas-backend",
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "8080",
+        "APP_URL": "${{RAILWAY_PUBLIC_DOMAIN}}",
+        "DATABASE_URL": "${{DATABASE_URL}}",
+        "JWT_SECRET": "",
+        "SMTP_HOST": "",
+        "SMTP_PORT": "",
+        "SMTP_USER": "",
+        "SMTP_PASS": "",
+        "SMTP_FROM": "",
+        "STRIPE_SECRET_KEY": "",
+        "STRIPE_WEBHOOK_SECRET": "",
+        "STRIPE_PRICE_ID": "",
+        "STRIPE_SUCCESS_URL": "",
+        "STRIPE_CANCEL_URL": ""
+      },
+      "build": {
+        "builder": "NIXPACKS"
+      }
+    }
+  ]
+}
