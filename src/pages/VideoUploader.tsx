@@ -5,62 +5,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 export default function VideoUploader() {
   const [video, setVideo] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [platforms, setPlatforms] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
   const handleUpload = async () => {
     if (!video || !caption || platforms.length === 0) return;
 
     setLoading(true);
     try {
-      const fileExt = video.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const filePath = `uploads/${fileName}`;
+      // TODO: Upload to backend or trigger integration
+      const formData = new FormData();
+      formData.append("file", video);
+      formData.append("caption", caption);
+      formData.append("platforms", JSON.stringify(platforms));
 
-      const { error: uploadError } = await supabase.storage
-        .from('videos')
-        .upload(filePath, video, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: video.type || 'video/mp4'
-        });
+      // Example: await fetch("/api/upload", { method: "POST", body: formData });
 
-      if (uploadError) {
-        const message = uploadError.message?.includes('does not exist')
-          ? "Storage bucket 'videos' not found. Please create a public bucket named 'videos' in Supabase."
-          : uploadError.message;
-        throw new Error(message);
-      }
-
-      const { data: publicUrlData } = supabase.storage.from('videos').getPublicUrl(filePath);
-      const publicUrl = publicUrlData.publicUrl;
-
-      toast({
-        title: "Upload successful",
-        description: `Uploaded to: ${publicUrl}`,
-      });
-
-      // Optionally: send to your backend for distribution to selected platforms
-      // await fetch("/api/upload", { method: "POST", body: formData });
-
-      setVideo(null);
-      setCaption("");
-      setPlatforms([]);
+      alert("Upload successful! (Simulated)");
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Upload failed';
       console.error(err);
-      toast({
-        title: "Upload failed",
-        description: message,
-        variant: "destructive"
-      });
+      alert("Upload failed");
     } finally {
       setLoading(false);
     }
