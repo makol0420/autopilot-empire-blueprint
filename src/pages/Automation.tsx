@@ -1,4 +1,6 @@
-import { UnifiedContentHub } from "@/components/UnifiedContentHub";
+import { AutomationChecklist } from "@/components/AutomationChecklist";
+import { AIAgentWorkflow } from "@/components/AIAgentWorkflow";
+import { DashboardHeader } from "@/components/DashboardHeader";
 import { AuthGate } from "@/components/AuthGate";
 
 const Automation = () => {
@@ -7,13 +9,14 @@ const Automation = () => {
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8 space-y-8">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">Content & Automation Hub</h1>
+            <h1 className="text-3xl font-bold text-foreground">Automation Center</h1>
             <p className="text-muted-foreground">
-              Complete automated workflow from content creation to viral social media distribution.
+              Streamline your workflow with these essential automation tools and integrations.
             </p>
           </div>
           
-          <UnifiedContentHub />
+          <AIAgentWorkflow />
+          <AutomationChecklist />
         </div>
       </div>
     </AuthGate>
