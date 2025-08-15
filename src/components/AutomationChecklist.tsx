@@ -94,7 +94,8 @@ export function AutomationChecklist() {
   const completedCount = Object.values(completedTasks).filter(Boolean).length;
   const completionPercentage = Math.round((completedCount / automationTasks.length) * 100);
 
-  const getDifficultyColor = (difficulty: string) => {
+  type BadgeVariant = "default" | "secondary" | "destructive" | "success" | "warning" | "outline";
+  const getDifficultyColor = (difficulty: string): BadgeVariant => {
     switch (difficulty) {
       case "Easy": return "success";
       case "Medium": return "warning";
@@ -150,7 +151,7 @@ export function AutomationChecklist() {
                     <Badge variant="outline" className="text-xs">
                       {task.tool}
                     </Badge>
-                    <Badge variant={getDifficultyColor(task.difficulty) as any} className="text-xs">
+                    <Badge variant={getDifficultyColor(task.difficulty)} className="text-xs">
                       {task.difficulty}
                     </Badge>
                     <Badge variant="secondary" className="text-xs">
