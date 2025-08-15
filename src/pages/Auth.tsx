@@ -59,11 +59,12 @@ const Auth = () => {
           description: "Please check your email to verify your account.",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: message,
       });
     } finally {
       setLoading(false);

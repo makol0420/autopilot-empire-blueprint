@@ -17,7 +17,8 @@ import {
   Upload,
   Loader2,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  type LucideIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +28,7 @@ interface WorkflowStep {
   name: string;
   status: 'pending' | 'running' | 'completed' | 'error';
   description: string;
-  icon: any;
+  icon: LucideIcon;
   progress?: number;
 }
 
@@ -139,7 +140,7 @@ export function AIAgentWorkflow() {
         if (error) throw error;
         results.push({ platform, success: true, postId: data.postId });
       } catch (error) {
-        results.push({ platform, success: false, error: error.message });
+        results.push({ platform, success: false, error: (error as Error).message });
       }
     }
 
@@ -195,7 +196,7 @@ export function AIAgentWorkflow() {
       console.error('Workflow error:', error);
       toast({
         title: "Workflow Failed",
-        description: error.message,
+        description: (error as Error).message,
         variant: "destructive"
       });
       
@@ -224,9 +225,11 @@ export function AIAgentWorkflow() {
     }
   };
 
-  const getStatusColor = (status: WorkflowStep['status']) => {
+  const getStatusColor = (
+    status: WorkflowStep['status']
+  ): "success" | "warning" | "destructive" | "secondary" => {
     switch (status) {
-      case 'running': return 'primary';
+      case 'running': return 'warning';
       case 'completed': return 'success';
       case 'error': return 'destructive';
       default: return 'secondary';
@@ -345,7 +348,7 @@ export function AIAgentWorkflow() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{step.name}</span>
-                      <Badge variant={getStatusColor(step.status) as any} className="text-xs">
+                      <Badge variant={getStatusColor(step.status)} className="text-xs">
                         {step.status}
                       </Badge>
                       {getStatusIcon(step.status)}
