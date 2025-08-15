@@ -5,6 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { Menu, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/AuthProvider"
+import { SchedulerRunner } from "@/components/SchedulerRunner"
 
 interface LayoutProps {
   children: React.ReactNode
@@ -45,6 +46,9 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </header>
             
+            {/* Background scheduler */}
+            <SchedulerRunner />
+
             <main className="flex-1 overflow-auto">
               {children}
             </main>

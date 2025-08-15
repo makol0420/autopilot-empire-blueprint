@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/components/AuthProvider";
 
 interface WorkflowStep {
   id: string;
@@ -133,7 +134,9 @@ export function AIAgentWorkflow() {
   const [voice, setVoice] = useState("alloy");
   const [duration, setDuration] = useState("30");
   const [platforms, setPlatforms] = useState<string[]>([]);
+  const [scheduleAt, setScheduleAt] = useState<string>("");
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const updateStepStatus = (stepId: string, status: WorkflowStep['status'], progress?: number) => {
     setSteps(prev => prev.map(step => 
@@ -275,15 +278,31 @@ export function AIAgentWorkflow() {
       const videoUrl = await audioToVideo(audioUrl, workingTopic, duration);
       updateStepStatus('audio-to-video', 'completed');
 
-      // Step 4: Post to Social Media
-      updateStepStatus('post-social', 'running');
-      const results = await postToSocialMedia(videoUrl, script, platforms);
-      updateStepStatus('post-social', 'completed');
+      // If scheduling is set and user is authenticated, schedule instead of immediate posting
+      if (scheduleAt && user) {
+        const iso = new Date(scheduleAt).toISOString();
+        const { error: insertError } = await supabase.from('scheduled_posts').insert({
+          user_id: user.id,
+          video_url: videoUrl,
+          caption: script,
+          platforms,
+          scheduled_at: iso,
+          status: 'pending'
+        });
+        if (insertError) throw insertError;
+        updateStepStatus('post-social', 'completed');
+        toast({ title: 'Scheduled', description: `Post scheduled for ${new Date(iso).toLocaleString()}` });
+      } else {
+        // Step 4: Post to Social Media now
+        updateStepStatus('post-social', 'running');
+        const results = await postToSocialMedia(videoUrl, script, platforms);
+        updateStepStatus('post-social', 'completed');
 
-      toast({
-        title: "Workflow Complete!",
-        description: `Successfully posted to ${results.filter(r => r.success).length} platforms.`,
-      });
+        toast({
+          title: "Workflow Complete!",
+          description: `Successfully posted to ${results.filter(r => r.success).length} platforms.`,
+        });
+      }
 
     } catch (error) {
       console.error('Workflow error:', error);
@@ -424,26 +443,39 @@ export function AIAgentWorkflow() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Target Platforms</Label>
-            <div className="flex flex-wrap gap-2">
-              {['TikTok', 'Instagram Reels', 'YouTube Shorts', 'Twitter', 'LinkedIn'].map(platform => (
-                <Button
-                  key={platform}
-                  variant={platforms.includes(platform) ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    if (platforms.includes(platform)) {
-                      setPlatforms(platforms.filter(p => p !== platform));
-                    } else {
-                      setPlatforms([...platforms, platform]);
-                    }
-                  }}
-                  disabled={isRunning}
-                >
-                  {platform}
-                </Button>
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Target Platforms</Label>
+              <div className="flex flex-wrap gap-2">
+                {['TikTok', 'Instagram Reels', 'YouTube Shorts', 'Twitter', 'LinkedIn'].map(platform => (
+                  <Button
+                    key={platform}
+                    variant={platforms.includes(platform) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      if (platforms.includes(platform)) {
+                        setPlatforms(platforms.filter(p => p !== platform));
+                      } else {
+                        setPlatforms([...platforms, platform]);
+                      }
+                    }}
+                    disabled={isRunning}
+                  >
+                    {platform}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="scheduleAt">Schedule (optional)</Label>
+              <Input
+                id="scheduleAt"
+                type="datetime-local"
+                value={scheduleAt}
+                onChange={(e) => setScheduleAt(e.target.value)}
+                disabled={isRunning}
+              />
             </div>
           </div>
 

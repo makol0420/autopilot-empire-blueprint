@@ -7,13 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function VideoUploader() {
   const [video, setVideo] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [platforms, setPlatforms] = useState<string[]>([]);
+  const [scheduleAt, setScheduleAt] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleUpload = async () => {
     if (!video || !caption || platforms.length === 0) return;
@@ -42,17 +45,27 @@ export default function VideoUploader() {
       const { data: publicUrlData } = supabase.storage.from('videos').getPublicUrl(filePath);
       const publicUrl = publicUrlData.publicUrl;
 
-      toast({
-        title: "Upload successful",
-        description: `Uploaded to: ${publicUrl}`,
-      });
-
-      // Optionally: send to your backend for distribution to selected platforms
-      // await fetch("/api/upload", { method: "POST", body: formData });
+      // If scheduled time provided and user authenticated, create a scheduled post
+      if (scheduleAt && user) {
+        const iso = new Date(scheduleAt).toISOString();
+        const { error: insertError } = await supabase.from('scheduled_posts').insert({
+          user_id: user.id,
+          video_url: publicUrl,
+          caption,
+          platforms,
+          scheduled_at: iso,
+          status: 'pending'
+        });
+        if (insertError) throw insertError;
+        toast({ title: "Scheduled", description: `Post scheduled for ${new Date(iso).toLocaleString()}` });
+      } else {
+        toast({ title: "Upload successful", description: `Uploaded to: ${publicUrl}` });
+      }
 
       setVideo(null);
       setCaption("");
       setPlatforms([]);
+      setScheduleAt("");
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Upload failed';
       console.error(err);
@@ -96,13 +109,23 @@ export default function VideoUploader() {
           ))}
         </div>
 
+        <div className="space-y-2">
+          <label htmlFor="scheduleAt" className="text-sm text-muted-foreground">Schedule (optional)</label>
+          <Input
+            id="scheduleAt"
+            type="datetime-local"
+            value={scheduleAt}
+            onChange={(e) => setScheduleAt(e.target.value)}
+          />
+        </div>
+
         <Button
           disabled={loading || !video || !caption || platforms.length === 0}
           onClick={handleUpload}
           className="w-full"
         >
           {loading ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : null}
-          {loading ? "Uploading..." : "Upload & Publish"}
+          {loading ? "Uploading..." : scheduleAt ? "Upload & Schedule" : "Upload & Publish"}
         </Button>
       </CardContent>
     </Card>
